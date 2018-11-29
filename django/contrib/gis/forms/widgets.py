@@ -2,11 +2,11 @@ from __future__ import unicode_literals
 
 import logging
 
-from django.conf import settings
 from django.contrib.gis import gdal
 from django.contrib.gis.geos import GEOSException, GEOSGeometry
 from django.forms.widgets import Widget
 from django.utils import six, translation
+from django.urls import get_prefixed_static_url
 
 logger = logging.getLogger('django.contrib.gis')
 
@@ -70,7 +70,7 @@ class BaseGeometryWidget(Widget):
             'module': 'geodjango_%s' % name.replace('-', '_'),  # JS-safe
             'serialized': self.serialize(value),
             'geom_type': gdal.OGRGeomType(self.attrs['geom_type']),
-            'STATIC_URL': settings.STATIC_URL,
+            'STATIC_URL': get_prefixed_static_url(),
             'LANGUAGE_BIDI': translation.get_language_bidi(),
         }
         build_attrs_kwargs.update(attrs)

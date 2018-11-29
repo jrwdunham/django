@@ -1,6 +1,5 @@
 from django import template
 from django.apps import apps
-from django.utils.encoding import iri_to_uri
 from django.utils.html import conditional_escape
 from django.utils.six.moves.urllib.parse import quote, urljoin
 
@@ -16,6 +15,9 @@ class PrefixNode(template.Node):
         if name is None:
             raise template.TemplateSyntaxError(
                 "Prefix nodes must be given a name to return.")
+        if name not in ('STATIC_URL', 'MEDIA_URL'):
+            raise template.TemplateSyntaxError(
+                "Prefix node name must be STATIC_URL or MEDIA_URL.")
         self.varname = varname
         self.name = name
 
@@ -37,12 +39,15 @@ class PrefixNode(template.Node):
 
     @classmethod
     def handle_simple(cls, name):
+        prefix = ''
         try:
-            from django.conf import settings
-        except ImportError:
-            prefix = ''
-        else:
-            prefix = iri_to_uri(getattr(settings, name, ''))
+            from django.urls.base import get_prefixed_static_url, get_prefixed_media_url
+            if name == 'STATIC_URL':
+                prefix = get_prefixed_static_url()
+            elif name == 'MEDIA_URL':
+                prefix = get_prefixed_media_url()
+        except (ImportError, TypeError):
+            pass
         return prefix
 
     def render(self, context):
@@ -56,8 +61,8 @@ class PrefixNode(template.Node):
 @register.tag
 def get_static_prefix(parser, token):
     """
-    Populates a template variable with the static prefix,
-    ``settings.STATIC_URL``.
+    Populates a template variable with the static prefix:
+    ``settings.STATIC_URL`` prefixed with ``SCRIPT_NAME`` WSGI parameter.
 
     Usage::
 
@@ -75,7 +80,7 @@ def get_static_prefix(parser, token):
 def get_media_prefix(parser, token):
     """
     Populates a template variable with the media prefix,
-    ``settings.MEDIA_URL``.
+    ``settings.MEDIA_URL`` prefixed with ``SCRIPT_NAME`` WSGI parameter.
 
     Usage::
 
@@ -142,7 +147,8 @@ class StaticNode(template.Node):
 @register.tag('static')
 def do_static(parser, token):
     """
-    Joins the given path with the STATIC_URL setting.
+    Joins the given path with the ``STATIC_URL`` setting,
+    prefixed with ``SCRIPT_NAME`` WSGI parameter.
 
     Usage::
 
