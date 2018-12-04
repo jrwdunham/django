@@ -12,6 +12,7 @@ import time
 import traceback
 import warnings
 from pathlib import Path
+from urllib.parse import urljoin
 
 import django
 from django.conf import global_settings
@@ -28,6 +29,44 @@ FILE_CHARSET_DEPRECATED_MSG = (
     'The FILE_CHARSET setting is deprecated. Starting with Django 3.1, all '
     'files read from disk must be UTF-8 encoded.'
 )
+
+
+SHOULD_ADD_SCRIPT_PREFIX = (
+    'STATIC_URL',
+    'MEDIA_URL',
+)
+
+from django.core.validators import URLValidator
+from django.core.exceptions import ValidationError
+
+
+
+def add_script_prefix(name, value):
+    """
+    Prefix header value SCRIPT_NAME to ``value`` under certain circumstances.
+
+    Useful for when the app is being served at a subpath and manually prefixing
+    that subpath to STATIC_URL and STATIC_ROOT in settings is inconvenient
+    (i.e., a deployment concern). Refs #25598.
+    """
+    if name not in SHOULD_ADD_SCRIPT_PREFIX:
+        return value
+    try:
+        URLValidator()(value)
+        return value
+    except (ValidationError, AttributeError):
+        pass
+    from django.urls import get_script_prefix  # circular dependency if top-level import
+    prefix = get_script_prefix()
+    if not prefix or prefix == '/':
+        return value
+    # try to detect if the prefix is already prefixed appropriately.
+    try:
+        if value.startswith(prefix) and value != prefix:
+            return value
+    except AttributeError:
+        return value
+    return os.path.join(prefix, value.lstrip('/'))
 
 
 class LazySettings(LazyObject):
@@ -65,7 +104,7 @@ class LazySettings(LazyObject):
         """Return the value of a setting and cache it in self.__dict__."""
         if self._wrapped is empty:
             self._setup(name)
-        val = getattr(self._wrapped, name)
+        val = add_script_prefix(name, getattr(self._wrapped, name))
         self.__dict__[name] = val
         return val
 
