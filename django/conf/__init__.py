@@ -131,6 +131,14 @@ class LazySettings(LazyObject):
     def MEDIA_URL(self):
         return add_script_prefix(self.__getattr__('MEDIA_URL'))
 
+    @property
+    def LOGIN_URL(self):
+        return add_script_prefix(self.__getattr__('LOGIN_URL'))
+
+    @property
+    def LOGOUT_URL(self):
+        return add_script_prefix(self.__getattr__('LOGOUT_URL'))
+
 
 class Settings(object):
     def __init__(self, settings_module):
