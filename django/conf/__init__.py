@@ -11,10 +11,37 @@ import os
 import time
 
 from django.conf import global_settings
-from django.core.exceptions import ImproperlyConfigured
+from django.core.exceptions import ImproperlyConfigured, ValidationError
 from django.utils.functional import LazyObject, empty
+from django.core.validators import URLValidator
 
 ENVIRONMENT_VARIABLE = "DJANGO_SETTINGS_MODULE"
+
+
+def add_script_prefix(value):
+    """
+    Prefix header value SCRIPT_NAME to ``value`` under certain circumstances.
+
+    Useful for when the app is being served at a subpath and manually prefixing
+    that subpath to STATIC_URL and STATIC_ROOT in settings is inconvenient
+    (i.e., a deployment concern). Refs #25598.
+    """
+    try:
+        URLValidator()(value)
+        return value
+    except (ValidationError, AttributeError):
+        pass
+    from django.urls import get_script_prefix  # circular dependency if top-level import
+    prefix = get_script_prefix()
+    if not prefix or prefix == '/':
+        return value
+    # try to detect if the prefix is already prefixed appropriately.
+    try:
+        if value.startswith(prefix) and value != prefix:
+            return value
+    except AttributeError:
+        return value
+    return os.path.join(prefix, value.lstrip('/'))
 
 
 class LazySettings(LazyObject):
@@ -95,6 +122,14 @@ class LazySettings(LazyObject):
         Returns True if the settings have already been configured.
         """
         return self._wrapped is not empty
+
+    @property
+    def STATIC_URL(self):
+        return add_script_prefix(self.__getattr__('STATIC_URL'))
+
+    @property
+    def MEDIA_URL(self):
+        return add_script_prefix(self.__getattr__('MEDIA_URL'))
 
 
 class Settings(object):
