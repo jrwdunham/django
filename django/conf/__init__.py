@@ -54,9 +54,6 @@ def add_script_prefix(value):
     prefix = get_script_prefix()
     if not prefix or prefix == '/':
         return value
-    # try to detect if the prefix is already prefixed appropriately.
-    if value.startswith(prefix) and value != prefix:
-        return value
     return os.path.join(prefix, value.lstrip('/'))
 
 

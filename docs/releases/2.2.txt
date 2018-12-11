@@ -438,13 +438,10 @@ Miscellaneous
 
 * The ``STATIC_URL`` and ``MEDIA_URL`` settings will now automatically have the
   ``SCRIPT_NAME`` header prefixed to their values when the settings attribute
-  is requested. This auto-prefixation occurs only if *all* of the following are
-  true of the initial values: a) they are *not* valid URLs, b) they do *not*
-  begin with a forward slash, and c) they do *not* already contain
-  ``SCRIPT_NAME`` as a prefix. This may cause backwards incompatibility in
-  certain rare corner cases, i.e., where one of these settings is intentionally
-  configured to be identical to the header-supplied ``SCRIPT_NAME``. In these
-  cases, the ``*_URL`` setting should be set to an empty string.
+  is requested. This auto-prefixation occurs only if *both* of the following are
+  true of the initial values: a) they are *not* valid URLs and b) they do *not*
+  begin with a forward slash. This may cause backwards incompatibility in
+  certain corner cases.
 
 .. _deprecated-features-2.2:
 

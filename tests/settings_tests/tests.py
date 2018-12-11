@@ -615,16 +615,18 @@ script_name_test_cases = (
         initial_media_url='/somesubpath/media/',
         final_media_url='/somesubpath/media/',),
 
-    # Settings lacking slash prefix and already having prefix---no change expected
+    # Settings lacking slash prefix will receive SCRIPT_NAME prefix even if
+    # they superficially appear to already have it (minus the slash initial
+    # char).
     ScriptNameTestCase(
-        script_name='somesubpath/',
+        script_name='/somesubpath/',
         initial_static_url='somesubpath/static/',
-        final_static_url='somesubpath/static/',
+        final_static_url='/somesubpath/somesubpath/static/',
         initial_media_url='somesubpath/media/',
-        final_media_url='somesubpath/media/',),
+        final_media_url='/somesubpath/somesubpath/media/',),
 
-    # Settings identical to SCRIPT_NAME so prefixation occurs; strange but
-    # consistent.
+    # Settings identical to SCRIPT_NAME (minust initial forward slash) so
+    # prefixation occurs; strange but consistent.
     ScriptNameTestCase(
         script_name='/somesubpath/',
         initial_static_url='somesubpath/',
